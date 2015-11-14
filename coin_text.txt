@@ -1,0 +1,4 @@
+eJwdjjEKRTEIBIW0Qq4i2ApePWAreJWArbA/7y9bDbswGC0A3Biqczbp1VXpPn073CZ # outermost ring, one of four
+v1atpP5gfbDfK/1JkYfK7q+LSYnoJItRt9R7Lc02CbbPErtfVN/ps4cqVS1s # second outermost ring, two of four
+THNwecmjbSVo1ihmFwx1JUd0kPVMZIG3B4U17ErrXg # third outermost ring, three of four
+0NX28mY6k6QjgsGD+HJnh/LpXbz # inner most ring, four of four
