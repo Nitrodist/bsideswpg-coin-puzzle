@@ -148,7 +148,20 @@ cat qr_without_newlines.txt | ruby -e 'ARGF.read.each_char.with_index{|char, i| 
         a
 ```
 
-Looks like a QR code!
+Looks like a QR code! Let's set our terminal up to display it better so that we can use a QR scanner on our phone to scan it.
+
+Adjust the foreground and background color:
+
+![Adjust FG and BG colors in terminal](/adjust-fg-and-bg-color.jpg?raw=true "Adjust FG and BG colors in terminal")
+
+Adjust vertical spacing:
+
+![Adjust vertical spacing](/vertical-spacing.jpg?raw=true "Adjust vertical spacing")
+
+Here's the result!
+
+![Result of terminal adjustments](/result.jpg?raw=true "Result of termainl adjustments")
+
 
 
 ## Bonus question or something?
