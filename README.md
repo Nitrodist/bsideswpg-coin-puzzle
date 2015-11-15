@@ -1,6 +1,6 @@
 # BSides Winnipeg 2015 Coin Puzzle
 
-## Step 1
+## Step 1 - base64 decode ciphertext
 
 Transcribe from the coin, the ciphertext (check `coin_text_as_one_line.txt` if you don't want to do that):
 
@@ -8,7 +8,7 @@ Transcribe from the coin, the ciphertext (check `coin_text_as_one_line.txt` if y
 cat coin_text_as_one_line.txt | base64 --decode > coin_text_base64_decoded.txt
 ```
 
-## Step 2
+## Step 2 - convert ciphertext to qr code (draw the rest of the owl)
 
 Notice that the ciphertext has only nibbles in it: F 0 3 C. Check it out by doing this:
 
