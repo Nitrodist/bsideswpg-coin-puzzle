@@ -1,47 +1,95 @@
 # BSides Winnipeg 2015 Coin Puzzle
 
-## Step 1 - base64 decode ciphertext
+## Step 1 - base64 decode the ciphertext
 
-Transcribe from the coin, the ciphertext (check `coin_text_as_one_line.txt` if you don't want to do that):
-
-```
-cat coin_text_as_one_line.txt | base64 --decode > coin_text_base64_decoded.txt
-```
-
-## Step 2 - convert ciphertext to qr code (draw the rest of the owl)
-
-Notice that the ciphertext has only nibbles in it: F 0 3 C. Check it out by doing this:
+The text of the coin is a base64 encoded string. The first thing you should do is transcribe the text from the coin to a file on your computer. If you don't want to do that, just use the `coin_text_as_one_line.txt` file in this repo. Here's the text:
 
 ```
-python decompress_zlib.py | hexdump -C
+eJwdjjEKRTEIBIW0Qq4i2ApePWAreJWArbA/7y9bDbswGC0A3BiqczbplVXpPN073CZvlatpP5gfbDfK/1JkYfK7q+LSYnoJItRt9R7Lc02CbbPErtfVN/ps4cqVS1sTHNwecmjbSVolihmFwxlJUd0kPVMZIG3B4Ul7ErrXg0NX28mY6k6QjgsGD+HJnh/LpXbz
 ```
 
-Which produces this:
+Once it's in the file, we can decode it by piping the text to the `base64` command:
 
 ```
-00000000  ff fc 33 cf ff ff ff 0c  f3 ff fc 00 cf c0 c0 0f  |..3.............|
-00000010  00 33 f0 30 03 cf cc 3f  0c fc f3 f3 0f c3 3f 3c  |.3.0...?......?<|
-00000020  fc cc f0 cf cf 3f 33 3c  33 f3 cf cc 3f cc fc f3  |.....?3<3...?...|
-00000030  f3 0f f3 3f 3c 00 cc c0  c0 0f 00 33 30 30 03 ff  |...?<......300..|
-00000040  fc cc cf ff ff ff 33 33  ff f0 00 03 0c 00 00 00  |......33........|
-00000050  00 c3 00 00 ff cf f0 f3  33 3f f3 fc 3c cc c0 f0  |........3?..<...|
-00000060  3c 30 c3 0c 3c 0f 0c 30  c3 0f cf c3 0f cf 03 f3  |<0..<..0........|
-00000070  f0 c3 f3 c0 0f 30 0c cf  cc 03 cc 03 33 f3 33 cc  |.....0......3.3.|
-00000080  ff 0c c3 0c f3 3f c3 30  c0 00 0f 3c c0 cc 00 03  |.....?.0...<....|
-00000090  cf 30 33 ff fc fc 33 ff  3f ff 3f 0c ff cc 00 c3  |.03...3.?.?.....|
-000000a0  cf f3 f3 00 30 f3 fc fc  cf cc c3 ff 00 33 f3 30  |....0........3.0|
-000000b0  ff c0 0c fc cc 3c 0f f3  3f 33 0f 03 fc cf cc fc  |.....<..?3......|
-000000c0  00 f0 33 f3 3f 00 3c 0c  00 cf f0 fc c3 00 33 fc  |..3.?.<.......3.|
-000000d0  3f 30 ff fc ff 33 f3 3f  ff 3f cc fc c0 0a        |?0...3.?.?....|
-000000de
+$ cat coin_text_as_one_line.txt | base64 --decode > coin_text_base64_decoded.txt
 ```
+
+If we try to `cat` that file to our terminal, we get a bunch of weird characters -- so it's just a stream of bytes now.
+
+## Step 2 - investigate the bytestream
+
+Here's what the bytestream looks like as a hexdump:
+
+```
+$ hexdump coin_text_base64_decoded.txt
+
+0000000 78 9c 1d 8e 31 0a 45 31 08 04 85 b4 42 ae 22 d8
+0000010 0a 5e 3d 60 2b 78 95 80 ad b0 3f ef 2f 5b 0d bb
+0000020 30 18 2d 00 dc 18 aa 73 36 e9 95 55 e9 3c dd 3b
+0000030 dc 26 6f 95 ab 69 3f 98 1f 6c 37 ca ff 52 64 61
+0000040 f2 bb ab e2 d2 62 7a 09 22 d4 6d f5 1e cb 73 4d
+0000050 82 6d b3 c4 ae d7 d5 37 fa 6c e1 ca 95 4b 5b 13
+0000060 1c dc 1e 72 68 db 49 5a 25 8a 19 85 c3 19 49 51
+0000070 dd 24 3d 53 19 20 6d c1 e1 49 7b 12 ba d7 83 43
+0000080 57 db c9 98 ea 4e 90 8e 0b 06 0f e1 c9 9e 1f cb
+0000090 a5 76 f3
+0000093
+```
+
+The image inside of the coin has a C-clamp/vise -- maybe this indicates that it's compressed?
+
+Files usually have certain byte sequences at the beginning or end of the file. The first 4 bytes are this: `78 9c`. I ended up googling it and the first result was this Stack Overlfow question: "[What does a zlib header look like?](http://stackoverflow.com/questions/9050260/what-does-a-zlib-header-look-like)" -- sounds like we have a zlib bytestream! As it turns out `78 9c` is the byte sequence for 'Default compression'.
+
+Let's try decompressing it with a simple python program (`decompress_zlib.py`):
+
+```
+#!/usr/bin/env python
+
+import zlib
+
+filename = 'coin_text_base64_decoded.txt'
+data = open(filename).read()
+
+print(zlib.decompress(data)),
+```
+
+One of the features of zlib is that the last 4 bytes of the stream are reserved for a checksum. This was very useful because we failed the checksum the first few times because on the original coin I had...
+
+A) transcribed an uppercase 'N' as a lowercase one and...
+B) I could not distinguish between the 7 `1` and `l` characters **at all**
+
+Special thanks to [Michael Loney](https://twitter.com/Dragon_Eater) and [Mak Kolybabi](https://twitter.com/mak_kolybabi) for transcribing the `l` and `1` characters correctly!
+
+Once we had the correct text, we are able to see the decompressed version:
+
+```
+$ python decompress_zlib.py | hexdump
+
+0000000 ff fc 33 cf ff ff ff 0c f3 ff fc 00 cf c0 c0 0f
+0000010 00 33 f0 30 03 cf cc 3f 0c fc f3 f3 0f c3 3f 3c
+0000020 fc cc f0 cf cf 3f 33 3c 33 f3 cf cc 3f cc fc f3
+0000030 f3 0f f3 3f 3c 00 cc c0 c0 0f 00 33 30 30 03 ff
+0000040 fc cc cf ff ff ff 33 33 ff f0 00 03 0c 00 00 00
+0000050 00 c3 00 00 ff cf f0 f3 33 3f f3 fc 3c cc c0 f0
+0000060 3c 30 c3 0c 3c 0f 0c 30 c3 0f cf c3 0f cf 03 f3
+0000070 f0 c3 f3 c0 0f 30 0c cf cc 03 cc 03 33 f3 33 cc
+0000080 ff 0c c3 0c f3 3f c3 30 c0 00 0f 3c c0 cc 00 03
+0000090 cf 30 33 ff fc fc 33 ff 3f ff 3f 0c ff cc 00 c3
+00000a0 cf f3 f3 00 30 f3 fc fc cf cc c3 ff 00 33 f3 30
+00000b0 ff c0 0c fc cc 3c 0f f3 3f 33 0f 03 fc cf cc fc
+00000c0 00 f0 33 f3 3f 00 3c 0c 00 cf f0 fc c3 00 33 fc
+00000d0 3f 30 ff fc ff 33 f3 3f ff 3f cc fc c0 0a
+00000de
+```
+
+Hmm... seems kind of weird that the text has only these nibbles in it: `F` `0` `3` `C`.
 
 Say that they translate to these sequences based on binary:
 
-* `F: 1111`
-* `0: 0000`
-* `3: 0011`
-* `C: 1100`
+* Hexadecimal: `F` Binary: `1111` Decimal: `15`
+* Hexadecimal: `0` Binary: `0000` Decimal: `0`
+* Hexadecimal: `3` Binary: `0011` Decimal: `3`
+* Hexadecimal: `C` Binary: `1100` Decimal: `13`
 
 Let's clean up the output a bit:
 
@@ -91,13 +139,15 @@ python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! 
 1773
 ```
 
+The nearest square root of `1773` is `42`.
+
 Let's dump the characters to a file (`qr_without_newlines.txt`) so that we can use it more easily:
 
 ```
 python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g'     | sed 's!f!████!g' | sed 's!c!██  !g' | sed 's!3!  ██!g' | sed 's!0!    !g' | tr -d '\n' > qr_without_newlines.txt
 ```
 
-The nearest square root of `1773` is `42`.  So let's make an image based on newlines after 42 characters:
+So let's make an image based on newlines after 42 characters
 
 ```
 cat qr_without_newlines.txt | ruby -e 'ARGF.read.each_char.with_index{|char, i| if i % 42 == 0; print "\n"; end; print char }'
