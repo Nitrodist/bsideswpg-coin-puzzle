@@ -56,13 +56,13 @@ $ hexdump coin_text_base64_decoded.txt
 
 The image inside of the coin has a C-clamp/vise -- maybe this indicates that it's compressed?
 
-Files usually have certain byte sequences at the beginning or end of the file. The first 4 bytes are this: `78 9c`. I ended up googling it and the first result was this Stack Overflow question: "[What does a zlib header look like?](http://stackoverflow.com/questions/9050260/what-does-a-zlib-header-look-like)" -- sounds like we have a zlib bytestream! As it turns out, `78 9c` is the byte sequence for 'Default compression' in zlib.
+Files usually have certain byte sequences at the beginning or end of the file. The first four [nibbles](https://en.wikipedia.org/wiki/Nibble) are this: `78 9c`. I ended up googling it and the first result was this Stack Overflow question: "[What does a zlib header look like?](http://stackoverflow.com/questions/9050260/what-does-a-zlib-header-look-like)" -- sounds like we have a zlib bytestream! As it turns out, `78 9c` is the byte sequence for 'Default compression' in zlib.
 
 ## Step 3 - decompress the bytestream
 
 Let's try decompressing it with a simple python program (`decompress_zlib.py`):
 
-```
+```python
 #!/usr/bin/env python
 
 import zlib
@@ -107,7 +107,7 @@ No errors! Seems like we're on the right track.
 
 ## Step 4 - find the QR code
 
-Hmm... seems kind of weird that the text has only these bytes in it: `F` `0` `3` `C`.
+Hmm... seems kind of weird that the text has only these nibbles in it: `F` `0` `3` `C`.
 
 Say that they translate to these sequences based on binary:
 
@@ -163,7 +163,7 @@ $ python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's
 
 Looks weird, doesn't it? OK, let's assume that the image is *square*. What's the nearest square of the characters we have now? Let's count it via the `wc -c` command and make sure to remember to remove any newlines from the `hexdump` command by piping the output to `tr -d '\n'`.
 
-We used 'X's instead of `█` in this case because `wc` thinks each `█` is 2 bytes so that would double the expected number of bytes. Here's how we counted the characters:
+We used 'X's instead of `█` in this case because `wc` thinks each `█` is 2 bytes/characters so that would double the expected number of bytes/characters. Here's how we counted the characters:
 
 ```
 $ python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g'     | sed 's!f!XXXX!g' | sed 's!c!XX  !g' | sed 's!3!  XX!g' | sed 's!0!    !g' | tr -d '\n' | wc -c
@@ -179,7 +179,7 @@ Let's dump the characters to a file (`qr_without_newlines.txt`) so that we can u
 $ python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g'     | sed 's!f!████!g' | sed 's!c!██  !g' | sed 's!3!  ██!g' | sed 's!0!    !g' | tr -d '\n' > qr_without_newlines.txt
 ```
 
-So let's make an image based on newlines after 42 characters
+So let's make an image based on newlines after 42 characters (excuse the ruby one-liner):
 
 ```
 $ cat qr_without_newlines.txt | ruby -e 'ARGF.read.each_char.with_index{|char, i| if i % 42 == 0; print "\n"; end; print char }'
