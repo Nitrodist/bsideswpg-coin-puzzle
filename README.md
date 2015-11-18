@@ -14,9 +14,9 @@ From there, we see a few things:
 
 The four rows of characters appear to be [base64 encoded](https://en.wikipedia.org/wiki/Base64), so that will probably be our first step.
 
-The C-clamp/vise can be associated with compression -- infact, if we go halfway down [zlib's website](http://zlib.net/), we'll see that they have an image of a vise. Interesting!
+The C-clamp/vise can be associated with compression -- in fact, if we go halfway down [zlib's website](http://zlib.net/), we'll see that they have an image of a vise. Interesting!
 
-The 'QR' lettering probbaly refers to a [QR code](https://en.wikipedia.org/wiki/QR_code), so what are the puzzle makers trying to say here? That the QR code is within the compression somehow? Read on!
+The 'QR' lettering probably refers to a [QR code](https://en.wikipedia.org/wiki/QR_code), so what are the puzzle makers trying to say here? That the QR code is within the compression somehow? Read on!
 
 ## Step 1 - base64 decode the ciphertext
 
@@ -56,7 +56,7 @@ $ hexdump coin_text_base64_decoded.txt
 
 The image inside of the coin has a C-clamp/vise -- maybe this indicates that it's compressed?
 
-Files usually have certain byte sequences at the beginning or end of the file. The first 4 bytes are this: `78 9c`. I ended up googling it and the first result was this Stack Overlfow question: "[What does a zlib header look like?](http://stackoverflow.com/questions/9050260/what-does-a-zlib-header-look-like)" -- sounds like we have a zlib bytestream! As it turns out, `78 9c` is the byte sequence for 'Default compression' in zlib.
+Files usually have certain byte sequences at the beginning or end of the file. The first 4 bytes are this: `78 9c`. I ended up googling it and the first result was this Stack Overflow question: "[What does a zlib header look like?](http://stackoverflow.com/questions/9050260/what-does-a-zlib-header-look-like)" -- sounds like we have a zlib bytestream! As it turns out, `78 9c` is the byte sequence for 'Default compression' in zlib.
 
 ## Step 3 - decompress the bytestream
 
