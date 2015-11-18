@@ -1,6 +1,8 @@
 # BSides Winnipeg 2015 Coin Puzzle
 
-At 2015 edition of BSides Winnipeg, there was a capture-the-flag/puzzle based on a coin:
+*Big thanks to [Paul](https://twitter.com/ultramegaman) and [Michael Loney](https://twitter.com/Dragon_Eater) for working with me on the puzzle; I couldn't have done it without them! Also, thanks to [Mak Kolybabi](https://twitter.com/mak_kolybabi) for creating the puzzle in the first place!*
+
+At 2015 edition of BSides Winnipeg, there was a [capture-the-flag](https://en.wikipedia.org/wiki/Capture_the_flag#Computer_security)/puzzle based on a physical coin:
 
 ![Coin Puzzle Image](/coin.jpg?raw=true "Coin Puzzle Image")
 
