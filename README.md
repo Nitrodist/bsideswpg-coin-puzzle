@@ -1,5 +1,21 @@
 # BSides Winnipeg 2015 Coin Puzzle
 
+At 2015 edition of BSides Winnipeg, there was a capture-the-flag/puzzle based on a coin:
+
+![Coin Puzzle Image](/coin.jpg?raw=true "Coin Puzzle Image")
+
+From there, we see a few things:
+
+* The letters QR in the center
+* A C-clamp/vise
+* Four rows of letters, numbers, and symbols
+
+The four rows of characters appear to be [base64 encoded](https://en.wikipedia.org/wiki/Base64), so that will probably be our first step.
+
+The C-clamp/vise can be associated with compression -- infact, if we go halfway down [zlib's website](http://zlib.net/), we'll see that they have an image of a vise. Interesting!
+
+The 'QR' lettering probbaly refers to a [QR code](https://en.wikipedia.org/wiki/QR_code), so what are the puzzle makers trying to say here? That the QR code is within the compression somehow? Read on!
+
 ## Step 1 - base64 decode the ciphertext
 
 The text of the coin is a base64 encoded string. The first thing you should do is transcribe the text from the coin to a file on your computer. If you don't want to do that, just use the `coin_text_as_one_line.txt` file in this repo. Here's the text:
@@ -40,6 +56,8 @@ The image inside of the coin has a C-clamp/vise -- maybe this indicates that it'
 
 Files usually have certain byte sequences at the beginning or end of the file. The first 4 bytes are this: `78 9c`. I ended up googling it and the first result was this Stack Overlfow question: "[What does a zlib header look like?](http://stackoverflow.com/questions/9050260/what-does-a-zlib-header-look-like)" -- sounds like we have a zlib bytestream! As it turns out `78 9c` is the byte sequence for 'Default compression'.
 
+## Step 3 - decompress the bytestream
+
 Let's try decompressing it with a simple python program (`decompress_zlib.py`):
 
 ```
@@ -50,13 +68,14 @@ import zlib
 filename = 'coin_text_base64_decoded.txt'
 data = open(filename).read()
 
+# comma at the end means that it won't print a newline
 print(zlib.decompress(data)),
 ```
 
 One of the features of zlib is that the last 4 bytes of the stream are reserved for a checksum. This was very useful because we failed the checksum the first few times because on the original coin I had...
 
-A) transcribed an uppercase 'N' as a lowercase one and...
-B) I could not distinguish between the 7 `1` and `l` characters **at all**
+1. transcribed an uppercase 'N' as a lowercase one and...
+2. I could not distinguish between the 7 `1` and `l` characters **at all**
 
 Special thanks to [Michael Loney](https://twitter.com/Dragon_Eater) and [Mak Kolybabi](https://twitter.com/mak_kolybabi) for transcribing the `l` and `1` characters correctly!
 
@@ -82,6 +101,10 @@ $ python decompress_zlib.py | hexdump
 00000de
 ```
 
+No errors! Seems like we're on the right track.
+
+## Step 4 - find the QR code
+
 Hmm... seems kind of weird that the text has only these nibbles in it: `F` `0` `3` `C`.
 
 Say that they translate to these sequences based on binary:
@@ -91,7 +114,9 @@ Say that they translate to these sequences based on binary:
 * Hexadecimal: `3` Binary: `0011` Decimal: `3`
 * Hexadecimal: `C` Binary: `1100` Decimal: `13`
 
-Let's clean up the output a bit:
+We could probably take the binary output and display it somehow!
+
+Let's clean up the output a bit before we do anything else:
 
 ```
 python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g'
@@ -112,45 +137,48 @@ ffc00cfccc3c0ff33f330f03fccfccfc
 00000de
 ```
 
-Convert the F, C, 3, and 0s to 1's and 0's:
+Since it's a QR code, let's convert each `11` to a `██` and each `00` to a `  ` that we found as binary. Here's how to do it with a series of `sed` commands:
 
 ```
-python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g' | sed 's!X!█!g' | sed 's!\.! !g' | sed 's!f!██!g' | sed 's!c! █!g' | sed 's!3! █!g' | sed 's!0!  !g'
-██████ █ █ █ ███████████████   ███ ███████ █     ███ █   █    ██
-     █ ███   █     █ ███ █ █ ███   ███ ███ ███ █  ██ █ █ ███ █ █
-██ █ █ ███   ███ ███ ███ █ █ █ █ █ ███ █ ███ █ █ ███ █ ███ ███ █
-██ █  ████ █ ███ █ █     █ █ █   █    ██     █ █ █   █     █████
-██ █ █ █ ███████████████ █ █ █ ███████         █   █
-     █ █        ████ █████  ██ █ █ █ █████ ███ █ █ █ █ █ █  ██
- █ █ █   █ █   █ █ █  ██   █ █   █ █  ██ ███ █ █  ██ ███   ███ █
-██   █ ███ █ █    ██ █     █ ███ █ █   █ █ █   █ █ ███ █ █ █ █ █
-████   █ █ █   ███ █ ███ █ █ █   █        ██ █ █ █   █ █       █
- ███ █   █ ███████ ███ █ █ █████ ███████ ███   █████ █ █     █ █
- █████ ███ █     █  ██ ███ ███ █ ███ █ █ █ █████     █ ███ █ █
-████ █     ███ █ █ █ █ █  ████ █ ███ █ █  ██   ███ █ ███ █ ███ █
-    ██   █ ███ █ ███     █ █   █     █████  ██ █ █ █     █ ███ █
- ███ █  ██████ █████ █ ███ █ ███████ ███ █ ███ █ █    a
-```
+$ python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g' | sed 's!f!████!g' | sed 's!c!██  !g' | sed 's!3!  ██!g' | sed 's!0!    !g'
 
-Looks weird, doesn't it? OK, let's assume that the image is *square*. What's the nearest square of the characters we have now? Here's how we did it (used 'X's instead of `█` in this case):
+██████████████    ██  ████  ████████████████████████████    ██  ████  ████████████████          ██  ██████      ██          ████
+          ██  ██████      ██          ████  ██████  ██    ██████    ██  ██████  ████  ██████  ██    ██████    ██  ██████  ████  
+██████  ██  ██  ████    ██  ██████  ████  ██████  ██  ██  ████    ██  ██████  ████  ██████  ██    ████████  ██  ██████  ████  ██
+████  ██    ████████  ██  ██████  ████          ██  ██  ██      ██          ████          ██  ██  ██      ██          ██████████
+██████  ██  ██  ██  ████████████████████████████  ██  ██  ██  ██████████████                  ██    ██                          
+        ██    ██                ██████████  ████████    ████  ██  ██  ██  ██████████  ████████    ████  ██  ██  ██      ████    
+  ████    ██    ██    ██    ██    ████      ████    ██    ██    ██    ██    ██████  ██████    ██    ██████  ████      ██████  ██
+████    ██    ██████  ████          ████  ██        ██  ██  ██████  ██        ████  ██        ██  ██  ██████  ██  ██  ████  ██  
+████████    ██  ██    ██    ██  ████  ██  ████████    ██  ██    ██                  ████  ████  ██      ██  ██                ██
+██  ████  ██      ██  ████████████████  ██████    ██  ██████████  ██████████████  ██████    ██  ██████████  ██          ██    ██
+██  ████████  ██████  ██          ██    ████  ████████  ██████  ██  ██████  ██  ██    ██████████          ██  ██████  ██  ██    
+██████████          ██  ██████  ██  ██    ████      ████████  ██  ██████  ██  ██    ████      ████████  ██  ██████  ██  ██████  
+        ████      ██  ██████  ██  ██████          ████      ██          ██  ████████    ██████  ██    ██          ██  ████████  
+  ██████  ██    ██████████████  ████████  ██  ██████  ██  ██████████████  ████████  ██  ██████  ██          a
 
 ```
-python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g'     | sed 's!f!XXXX!g' | sed 's!c!XX  !g' | sed 's!3!  XX!g' | sed 's!0!    !g' | tr -d '\n' | wc -c
+
+Looks weird, doesn't it? OK, let's assume that the image is *square*. What's the nearest square of the characters we have now? Here's how we did it (used 'X's instead of `█` in this case because `wc` thinks each `█` is 2 bytes):
+
+```
+$ python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g'     | sed 's!f!XXXX!g' | sed 's!c!XX  !g' | sed 's!3!  XX!g' | sed 's!0!    !g' | tr -d '\n' | wc -c
+
 1773
 ```
 
-The nearest square root of `1773` is `42`.
+The nearest square root of `1773` is `42`, so we'll assume that it's a 42x42 image.
 
 Let's dump the characters to a file (`qr_without_newlines.txt`) so that we can use it more easily:
 
 ```
-python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g'     | sed 's!f!████!g' | sed 's!c!██  !g' | sed 's!3!  ██!g' | sed 's!0!    !g' | tr -d '\n' > qr_without_newlines.txt
+$ python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g'     | sed 's!f!████!g' | sed 's!c!██  !g' | sed 's!3!  ██!g' | sed 's!0!    !g' | tr -d '\n' > qr_without_newlines.txt
 ```
 
 So let's make an image based on newlines after 42 characters
 
 ```
-cat qr_without_newlines.txt | ruby -e 'ARGF.read.each_char.with_index{|char, i| if i % 42 == 0; print "\n"; end; print char }'
+$ cat qr_without_newlines.txt | ruby -e 'ARGF.read.each_char.with_index{|char, i| if i % 42 == 0; print "\n"; end; print char }'
 
 
 ██████████████    ██  ████  ██████████████
@@ -212,6 +240,13 @@ Here's the result!
 
 ![Result of terminal adjustments](/result.jpg?raw=true "Result of termainl adjustments")
 
+# Step 5 - get the QR code text
+
+I used my Android phone with a program called 'QR Droid' to get the text:
+
+![QR text result](/Screenshot_20151118-082609.png?raw=true "QR text result")
+
+Sweet, we got the flag! Or, specifically, we got `🚩🔜💻`
 
 
 ## Bonus question or something?
@@ -230,8 +265,4 @@ On the program, there's *another* 32 character code:
 3e930a8b0cb5057027a6498265fbf67f
 ```
 
-## Coin puzzle image
-The puzzle image:
-
-![Coin Puzzle Image](/coin.jpg?raw=true "Coin Puzzle Image")
-
+Not sure what they were for, but they were there!
