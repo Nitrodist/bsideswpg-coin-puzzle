@@ -139,7 +139,7 @@ ffc00cfccc3c0ff33f330f03fccfccfc
 00000de
 ```
 
-Since it's a QR code, let's convert each `11` nibble to a `██` and each `00` nibble to a `  `. Here's how to do it with a series of `sed` commands:
+Since it's a QR code, let's convert each `11` nibble to two `█` characters and each `00` nibble to two ` ` characters. Here's how to do it with a series of `sed` commands:
 
 ```
 $ python decompress_zlib.py | hexdump | perl -pe 's!^........?!!g' | perl -pe 's! !!g' | sed 's!f!████!g' | sed 's!c!██  !g' | sed 's!3!  ██!g' | sed 's!0!    !g'
