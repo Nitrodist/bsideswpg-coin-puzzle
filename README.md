@@ -242,7 +242,7 @@ Adjust vertical spacing:
 
 Here's the result!
 
-![Result of terminal adjustments](/result.jpg?raw=true "Result of termainl adjustments")
+![Result of terminal adjustments](/result.jpg?raw=true "Result of terminal adjustments")
 
 # Step 5 - get the QR code text
 
